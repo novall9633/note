@@ -1,18 +1,23 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { ChevronsLeft, MenuIcon } from "lucide-react";
+import { ChevronsLeft, MenuIcon, Plus, PlusCircle, Search, Settings, Trash } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { ElementRef, useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "usehooks-ts";
 import { UserItem } from "./user-item";
-import { useQuery } from "convex/react";
+import { useMutation} from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { Item } from "./item";
+import { toast } from "sonner";
+import { DocumentList } from "./document-list";
+import { Popover, PopoverContent, PopoverTrigger } from "@radix-ui/react-popover";
 
 export const Navigation = () => {
     const pathname = usePathname();
     const isMobile = useMediaQuery("(max-width: 768px)");
-    const documents = useQuery(api.documents.get);
+
+    const create = useMutation(api.documents.create);
     const isResizingRef = useRef(false);
     const sidebarRef=useRef<ElementRef<"aside">>(null);
     const navbarRef=useRef<ElementRef<"div">>(null);
@@ -84,6 +89,15 @@ export const Navigation = () => {
             }, 300);
         }
     }
+
+    const handleCreate = () =>{
+        const promise = create({title:"Untitled"});
+        toast.promise(promise,{
+            loading: "Creating a new note...",
+            success:"New note created",
+            error:"Failed to create a new note.",
+        });
+    };
     
     return (
         <>
@@ -95,11 +109,19 @@ export const Navigation = () => {
                 </div>
                 <div>
                     <UserItem />
+                    <Item label="Search" icon={Search} isSearch onClick={()=>{}} />
+                    <Item label="Settings" icon={Settings} onClick={()=>{}} />
+                    <Item onClick={handleCreate} label="New page" icon={PlusCircle} />
                 </div>
                 <div className="mt-4">
-                    {documents?.map((document)=>(
-                        <p key={document._id}>{document.title}</p>
-                    ))}
+                    <DocumentList />
+                    <Item onClick={handleCreate} icon={Plus} label="Add a page" />
+                    <Popover>
+                        <PopoverTrigger className="w-full mt-4">
+                            <Item label="Trash" icon={Trash} />
+                        </PopoverTrigger>
+                        <PopoverContent className="p-0 w-72" side={isMobile? "bottom":"right"} />
+                    </Popover>
                 </div>
                 <div 
                 onMouseDown={handleMouseDown} onClick={resetWidth} className="opacity-0 group-hover/sidebar:opacity-100 transition cursor-ew-resize absolute h-full w-1 bg-primary/10 right-0 top-0">
